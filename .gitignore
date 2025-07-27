@@ -2,6 +2,9 @@ Binaries
 DerivedDataCache
 Intermediate
 Saved
+Packages
+.ucas
+.pak
 .vscode
 .vs
 *.VC.db

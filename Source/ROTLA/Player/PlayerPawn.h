@@ -97,11 +97,11 @@ protected:
 	float CrouchSpeed = 300.0f;
 	float WalkSpeed = 600.0f;
 	float SprintSpeed = 900.0f;
-	float SlideBoost = 1000.0f;
+	float SlideBoost = 1250.0f;
 	float SlideDuration = 2.0f;
 	float SlideFriction = 0.1f;
 	float NormalFriction;
-	float JumpHeight = 1000.0f;
+	float JumpHeight = 550.0f;
 	float HeightChangeSpeed = 1.0f;
 	float DesiredHeight;
 	float AirControl = 0.0f;

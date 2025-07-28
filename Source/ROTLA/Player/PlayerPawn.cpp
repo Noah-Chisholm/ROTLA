@@ -157,10 +157,12 @@ void APC_ROTLA::Slide() {
 	auto* Move = GetCharacterMovement();
 	Move->GroundFriction = SlideFriction;
 	Move->BrakingFrictionFactor = 0.0f;
-	SlideDirection = GetActorForwardVector();
+	SlideDirection = Move->GetLastUpdateVelocity();
+	SlideDirection.Normalize();
+	SlideDirection.Z = 0.0f;
 	ChangeHeight(SlideHeight);
 	//GetCapsuleComponent()->SetCapsuleHalfHeight(SlideHeight);
-	LaunchCharacter(GetActorForwardVector() * SlideBoost, true, false);
+	LaunchCharacter(SlideDirection * SlideBoost, true, false);
 }
 
 void APC_ROTLA::CrouchROTLA() {

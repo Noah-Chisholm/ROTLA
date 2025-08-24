@@ -3,6 +3,8 @@
 #include "GI_ROTLA.h"
 #include "Widgets/SWindow.h"
 #include "Framework/Application/SlateApplication.h"
+#include "ROTLA/Utility/DebugCommandHandler/DebugCommandHandler.h"
+#include "ROTLA/Weapons/WeaponRegistry.h"
 #include "Blueprint/UserWidget.h"
 #include "Widgets/SWeakWidget.h"
 
@@ -24,6 +26,9 @@ void UGI_ROTLA::OpenDebugWindow(UUserWidget* Widget) {
 	}
 
 	DebugWindow->SetContent(Widget->TakeWidget());
+
+	DebugHandler = NewObject<UDebugCommandHandler>(this, UDebugCommandHandler::StaticClass());
+	DebugHandler->Init(this);
 }
 
 void UGI_ROTLA::Shutdown()

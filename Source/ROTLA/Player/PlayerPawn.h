@@ -5,12 +5,12 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputAction.h"
+#include "ROTLA/Utility/Flag.h"
 #include "PlayerPawn.generated.h"
 
-UENUM(BlueprintType, meta = (Bitflags))
+UENUM(BlueprintType)
 enum class EPlayerFlags : uint8
 {
-	None,
 	IsAlive,
 	IsDead,
 	IsJumping,
@@ -23,10 +23,18 @@ enum class EPlayerFlags : uint8
 	WantsToSlide,
 	WantsToCrouch,
 	IsChangingHeight,
-	WantsToJump
+	WantsToJump,
+	IsFiring
 };
-ENUM_CLASS_FLAGS(EPlayerFlags)
 
+USTRUCT(BlueprintType)
+struct FHUDData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite)
+	FString AmmoDisplay;
+};
 
 UCLASS()
 class ROTLA_API APC_ROTLA : public ACharacter
@@ -69,26 +77,51 @@ protected:
 
 	void StopJump();
 
+	void HandleStartPrimaryAction();
+	
+	void HandleFinishPrimaryAction();
+
+	void HandleSecondaryAction();
+
+	void HandleTertiarayAction();
+
+	void HandleInteractionAction();
+
+	void HandleReload();
+
 	void ChangeHeight(float DesiredHeight);
+
+	bool UnequipWeapon();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	bool EquipWeapon(ADebugWeapon* Weapon);
+
+	virtual bool EquipWeapon_Implementation(ADebugWeapon* Weapon);
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void ExitWidget();
 
 	bool CanJumpInternal_Implementation() const override;
 
+	UFlag* PlayerFlag;
+	
 	UFUNCTION(BlueprintCallable)
-	void SetFlag(EPlayerFlags Flag);
+	void SetFlag(EPlayerFlags Value) {
+		PlayerFlag->_SetFlag(static_cast<int32>(Value));
+	}; 
+	UFUNCTION(BlueprintCallable)
+	void RemoveFlag(EPlayerFlags Value) {
+		PlayerFlag->_RemoveFlag(static_cast<int32>(Value));
+	}; 
+	UFUNCTION(BlueprintCallable)
+	bool HasFlag(EPlayerFlags Value) const {
+		return PlayerFlag->_HasFlag(static_cast<int32>(Value));
+	};
 
 	UFUNCTION(BlueprintCallable)
-	void RemoveFlag(EPlayerFlags Flag);
-
-	UFUNCTION(BlueprintCallable)
-	bool HasFlag(EPlayerFlags Flag) const;
+	FHUDData GetHudData();
 
 	virtual void Landed(const FHitResult& Hit) override;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
-	int32 PlayerFlags;
 
 	FTimerHandle MovingTimer;
 	float NormalHeight;
@@ -109,6 +142,7 @@ protected:
 	float MaxJumpTime = 0.5f;
 	float SlideTime = 0.0f;
 	FVector SlideDirection;
+	float InteractionDistance = 1000.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	class UInputMappingContext* InputMappingContext;
@@ -129,10 +163,30 @@ protected:
 	UInputAction* BackAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* PrimaryAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* SecondaryAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* SprintAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* TertiararyAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* InteractableAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* ReloadAction;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	class UCameraComponent* FirstPersonCamera;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapons")
+	class USceneComponent* PrimaryGripLocation;
+
+	class ADebugWeapon* EquipedWeapon;
 
 public:	
 	// Called every frame
@@ -141,4 +195,5 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	friend class UDebugCommandHandler;
 };

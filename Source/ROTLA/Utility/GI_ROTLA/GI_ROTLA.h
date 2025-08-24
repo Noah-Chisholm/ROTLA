@@ -30,6 +30,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Debug")
 	void OpenDebugWindow(UUserWidget* Widget);
 
+	UPROPERTY(BlueprintReadOnly)
+	class UDebugCommandHandler* DebugHandler;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	class UWeaponRegistry* Weapons;
+
 protected:
 	void Shutdown() override;
 	void CloseDebugWindow();

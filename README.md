@@ -3,11 +3,13 @@ Code Name: ROTLA
 a project in ue 5.4.4
 
 Next Commit Message:
-Updated the Readme to contain the working title, code name, roadmap, and my notes on potential items to add to the roadmap and directions to steer the game.
+Updated the Readme to contain the working title, code name, roadmap, and my notes on potential items to add to the roadmap and directions to steer the game. Implemented a data driven weapon system. Which allows for a weapon to have an adjustable range, number of projectiles to spawn per shot, a damage that takes a type and an amount, an accuracy which determines the degrees to use for a random cone that can be used to decide projectile trajectory, Projectile type for the eventual addition of different types of projectiles, a clip size, a starting ammo, a charge time to determine how long before the first shot may be fired, for when the planned homing projeciles are added I have a duration and accuracy to determine how long a projetile can track a target for and a radius around the target that a projectile may home to instead, in addition I have burst weapon capabilities with the number of bullets to fire in a burst and the delay between them, I have fire patterns single which only fires once every weapon activation, burst which fires the number of shots specified with a longer cool down, and fullauto, I added cool downs, reload times, and the mesh to assign to the weapon.
 
 Bugs:
 When sliding if you slide while jumping when you land you can change direction while sliding. If you just slide while running or after running it does not allow you to change direction while sliding todo: make where changing direction while sliding cannot be done when jumping. - Fixed
 When sliding during a jump it will launch the player into the air todo: fix - Fixed
+The weapon overwrite data function doesn't load new meshes correctly and will not work if the mesh hasn't been loaded into memory already. In addition this breaks the entire weapon because the data doesn't get pulled from the registry correctly.
+The DebugProjectiles don't delete themselves as they should
 
 General Prototype Roadmap
 00.01V — Combat Prototype

@@ -5,9 +5,11 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PawnMovementComponent.h"
+#include "ROTLA/Utility/Interfaces/InteractableInterface/InteractableInterface.h"
+#include "ROTLA/Weapons/DebugWeapon.h"
 #include "EnhancedInputSubsystems.h"
 #include "Components/CapsuleComponent.h"
-#include <ROTLA/Utility/GI_ROTLA/GI_ROTLA.h>
+#include "ROTLA/Utility/GI_ROTLA/GI_ROTLA.h"
 #include "EnhancedInput/Public/InputMappingContext.h"
 
 // Sets default values
@@ -19,10 +21,16 @@ APC_ROTLA::APC_ROTLA()
 	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>("Camera");
 	FirstPersonCamera->bUsePawnControlRotation = true;
 	FirstPersonCamera->SetupAttachment(GetCapsuleComponent());
+	PrimaryGripLocation = CreateDefaultSubobject<USceneComponent>("PrimaryGripLocation");
+	PrimaryGripLocation->SetupAttachment(FirstPersonCamera);
+	PrimaryGripLocation->SetUsingAbsoluteRotation(false);
+	PrimaryGripLocation->SetRelativeRotation(FRotator::ZeroRotator);
 
 	bUseControllerRotationYaw = true;
 	bUseControllerRotationPitch = true;
 	bUseControllerRotationRoll = false;
+
+	PlayerFlag = NewObject<UFlag>();
 
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 
@@ -112,9 +120,73 @@ void APC_ROTLA::StopJump() {
 	Super::StopJumping();
 }
 
+void APC_ROTLA::HandleStartPrimaryAction() {
+	if (EquipedWeapon) {
+		SetFlag(EPlayerFlags::IsFiring);
+		Cast<IInteractableInterface>(EquipedWeapon)->StartPrimaryInteraction();
+	}
+}
+
+void APC_ROTLA::HandleFinishPrimaryAction() {
+	if (EquipedWeapon) {
+		RemoveFlag(EPlayerFlags::IsFiring);
+		Cast<IInteractableInterface>(EquipedWeapon)->FinishPrimaryInteraction();
+	}
+}
+
+void APC_ROTLA::HandleSecondaryAction() {
+}
+
+void APC_ROTLA::HandleTertiarayAction() {
+}
+
+void APC_ROTLA::HandleInteractionAction() {
+	FHitResult Hit;
+	FVector StartLocation = FirstPersonCamera->GetComponentLocation();
+	FVector EndLocation = FirstPersonCamera->GetForwardVector() * InteractionDistance + StartLocation;
+	FCollisionQueryParams ColParams;
+	ColParams.AddIgnoredActor(this);
+	GetWorld()->LineTraceSingleByChannel(Hit, StartLocation, EndLocation, ECollisionChannel::ECC_Camera, ColParams);
+	auto* Actor = Hit.GetActor();
+	IInteractableInterface* InteractableActor = Cast<IInteractableInterface>(Actor);
+	if (InteractableActor) {
+		bool SuccesfulInteraction;
+		void* ReturnedData = InteractableActor->InteractableInteraction(nullptr, SuccesfulInteraction);
+		ADebugWeapon* Weapon = Cast<ADebugWeapon>(Actor);
+		if (Weapon) {
+			EquipWeapon(static_cast<ADebugWeapon*>(ReturnedData));
+		}
+	}
+}
+
+void APC_ROTLA::HandleReload() {
+	//TODO: Add Check for if the player has enough ammo;
+	EquipedWeapon->ReloadAmmo(999);
+}
+
 void APC_ROTLA::ChangeHeight(float NewHeight) {
 	DesiredHeight = NewHeight;
 	SetFlag(EPlayerFlags::IsChangingHeight);
+}
+
+bool APC_ROTLA::UnequipWeapon()
+{
+	if (!EquipedWeapon)
+		return false;
+	FDetachmentTransformRules Rules = FDetachmentTransformRules(EDetachmentRule::KeepWorld, true);
+	EquipedWeapon->DetachFromActor(Rules);
+	EquipedWeapon = nullptr;
+	return true;
+}
+
+bool APC_ROTLA::EquipWeapon_Implementation(ADebugWeapon* Weapon)
+{
+	UnequipWeapon();
+	EquipedWeapon = Weapon;
+	FAttachmentTransformRules Rules = FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true);
+	EquipedWeapon->AttachToActor(this, Rules);
+	EquipedWeapon->PrimararyGripLocation->AttachToComponent(PrimaryGripLocation, Rules);
+	return true;
 }
 
 void APC_ROTLA::Look(const FInputActionValue& Value) {
@@ -202,18 +274,11 @@ void APC_ROTLA::HandleBack(const FInputActionValue& Value) {
 	return;
 }
 
-void APC_ROTLA::SetFlag(EPlayerFlags Flag) {
-	PlayerFlags |= 1 << static_cast<int32>(Flag);
-}
-
-void APC_ROTLA::RemoveFlag(EPlayerFlags Flag) {
-	//if (Flag == EPlayerFlags::IsSliding)
-		//PRINT("Removing Sliding Flag?", MessageTypes::Message);
-	PlayerFlags &= ~(1 << static_cast<int32>(Flag));
-}
-
-bool APC_ROTLA::HasFlag(EPlayerFlags Flag) const {
-	return PlayerFlags & (1 << static_cast<int32>(Flag));
+FHUDData APC_ROTLA::GetHudData()
+{
+	FHUDData DataToReturn;
+	DataToReturn.AmmoDisplay = EquipedWeapon ? EquipedWeapon->GetAmmoString() : "";
+	return DataToReturn;
 }
 
 void APC_ROTLA::Landed(const FHitResult& Result) {
@@ -277,6 +342,12 @@ void APC_ROTLA::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &APC_ROTLA::StopCrouch);
 	EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &APC_ROTLA::SprintHandler);
 	EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &APC_ROTLA::StopSprint);
+	EnhancedInputComponent->BindAction(PrimaryAction, ETriggerEvent::Started, this, &APC_ROTLA::HandleStartPrimaryAction);
+	EnhancedInputComponent->BindAction(PrimaryAction, ETriggerEvent::Completed, this, &APC_ROTLA::HandleFinishPrimaryAction);
+	EnhancedInputComponent->BindAction(SecondaryAction, ETriggerEvent::Completed, this, &APC_ROTLA::HandleSecondaryAction);
+	EnhancedInputComponent->BindAction(TertiararyAction, ETriggerEvent::Completed, this, &APC_ROTLA::HandleTertiarayAction);
+	EnhancedInputComponent->BindAction(InteractableAction, ETriggerEvent::Completed, this, &APC_ROTLA::HandleInteractionAction);
+	EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Triggered, this, &APC_ROTLA::HandleReload);
 	
 	EnhancedInputComponent->BindAction(BackAction, ETriggerEvent::Triggered, this, &APC_ROTLA::HandleBack);
 	

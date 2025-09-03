@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DamageInterface.h"
+#include "ROTLA/Utility/Interfaces/DamageInterface/DamageInterface.h"
 #include "WeaponData.generated.h"
 
 UENUM(BlueprintType)

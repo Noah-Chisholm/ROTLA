@@ -21,9 +21,10 @@ public:
 	void Init(UGI_ROTLA* GI);
 protected:
 private:
-	TArray<FName> CommandList = { "SetPlayerWeapon", "GivePlayerWeapon"};
+	TArray<FName> CommandList = { "SetPlayerWeapon", "GivePlayerWeapon", "SummonEnemy"};
 	bool SetPlayerWeapon(FJsonSerializableArray Command, FString& ErrorMessage, bool IsFinished);
 	NewCommand(GivePlayerWeapon)
+	NewCommand(SummonEnemy)
 	UGI_ROTLA* GameInstance;
 	FString Invalid = " is not a valid ";
 	FString FloatEx = "<float> ex: 3.14159";

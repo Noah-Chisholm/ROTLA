@@ -1,6 +1,8 @@
 #include "DebugCommandHandler.h"
 #include "ROTLA/Player/PlayerPawn.h"
 #include "ROTLA/Weapons/DebugWeapon.h"
+#include "Camera/CameraComponent.h"
+#include "ROTLA/Enemies/EnemyRegistry.h"
 #include "ROTLA/Weapons/WeaponRegistry.h"
 #include "ROTLA/Weapons/DebugProjectile.h"
 
@@ -54,6 +56,8 @@ bool UDebugCommandHandler::ProcessCommand(const FString& Command, FString& Error
 			return SetPlayerWeapon(CommandComponentList, ErrorMessage, IsFinished);
 		if (CommandName == CommandList[1])
 			return GivePlayerWeapon(CommandComponentList, ErrorMessage, IsFinished);
+		if (CommandName == CommandList[2])
+			return SummonEnemy(CommandComponentList, ErrorMessage, IsFinished);
 	}
 	else {
 		if(IsFinished) 
@@ -162,5 +166,71 @@ NEWCOMMAND(GivePlayerWeapon) {
 		return false;
 	ADebugWeapon* NewWeapon = GameInstance->GetWorld()->SpawnActor<ADebugWeapon>(ADebugWeapon::StaticClass(), FTransform(Location));
 	NewWeapon->OverwriteData(NewData);
+	return true;
+}
+
+NEWCOMMAND(SummonEnemy) {
+	if (Data.Num() < 2) {
+		ErrorMessage = "Please provide a valid Enemy ID: ";
+		auto Options = GameInstance->Enemies->GetEntries();
+		for (int i = 0; i < Options.Num(); i++) {
+			ErrorMessage.Append(Options[i].ToString());
+			if (i != Options.Num() - 1)
+				ErrorMessage.Append(", ");
+		}
+		return false;
+	}
+	if (!GameInstance->Enemies->IsKey(FName(Data[1]))) {
+		if (IsFinished)
+			ErrorMessage = Data[1] + Invalid + " Enemy ID :(";
+		else {
+			auto Options = GameInstance->Enemies->GetEntries();
+			for (int i = 0; i < Options.Num(); i++) {
+				if (Options[i].ToString().Contains(Data[1])) {
+					ErrorMessage.Append(Options[i].ToString());
+					if (i != Options.Num() - 1)
+						ErrorMessage.Append(", ");
+				}
+			}
+			return false;
+		}
+	}
+	TSoftClassPtr<ADebugEnemy> EnemyData;
+	GameInstance->Enemies->GetFromName(FName(Data[1]), EnemyData);
+	FVector Location;
+	if (Data.Num() == 2) {
+		auto* Player = Cast<APC_ROTLA>(GameInstance->GetFirstLocalPlayerController()->GetPawn());
+		FVector FaceDirection = Player->FirstPersonCamera->GetForwardVector();
+		FVector StartLocation = Player->FirstPersonCamera->GetComponentLocation();
+		FHitResult Hit;
+		GetWorld()->LineTraceSingleByChannel(Hit, StartLocation, StartLocation + FaceDirection * DOUBLE_BIG_NUMBER, ECC_Camera);
+		if (Hit.bBlockingHit) {
+			Location = Hit.ImpactPoint;
+		}
+		else {
+			Location = Player->GetActorLocation() + FaceDirection * 999;
+		}
+	}
+	else {
+		ErrorMessage = "Too many arguments, there can only be one!";
+		return false;
+	}
+
+	if (!IsFinished)
+		return false;
+	if (UClass* EnemyClass = EnemyData.LoadSynchronous())
+	{
+		FActorSpawnParameters Params;
+		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+		ADebugEnemy* NewEnemy = GameInstance->GetWorld()->SpawnActor<ADebugEnemy>(
+			EnemyClass,
+			FTransform(Location),
+			Params
+		);
+	}
+	else {
+		GameInstance->PrintDebugC(FText::FromString("Enemy: " + EnemyData.GetAssetName() + " could not be loaded correctly! It is likely that the enemy not packaged correctly."), MessageTypes::Error);;
+	}
 	return true;
 }

@@ -6,26 +6,8 @@
 #include "GameFramework/Character.h"
 #include "InputAction.h"
 #include "ROTLA/Utility/Flag.h"
+#include "ROTLA/Utility/EntityFlags.h"
 #include "PlayerPawn.generated.h"
-
-UENUM(BlueprintType)
-enum class EPlayerFlags : uint8
-{
-	IsAlive,
-	IsDead,
-	IsJumping,
-	IsCrouching,
-	IsSprinting,
-	IsSliding,
-	IsMoving,
-	IsInWidget,
-	WantsToSprint,
-	WantsToSlide,
-	WantsToCrouch,
-	IsChangingHeight,
-	WantsToJump,
-	IsFiring
-};
 
 USTRUCT(BlueprintType)
 struct FHUDData
@@ -77,6 +59,8 @@ protected:
 
 	void StopJump();
 
+	void StopJumping();
+
 	void HandleStartPrimaryAction();
 	
 	void HandleFinishPrimaryAction();
@@ -106,15 +90,15 @@ protected:
 	UFlag* PlayerFlag;
 	
 	UFUNCTION(BlueprintCallable)
-	void SetFlag(EPlayerFlags Value) {
+	void SetFlag(EEntityFlags Value) {
 		PlayerFlag->_SetFlag(static_cast<int32>(Value));
 	}; 
 	UFUNCTION(BlueprintCallable)
-	void RemoveFlag(EPlayerFlags Value) {
+	void RemoveFlag(EEntityFlags Value) {
 		PlayerFlag->_RemoveFlag(static_cast<int32>(Value));
 	}; 
 	UFUNCTION(BlueprintCallable)
-	bool HasFlag(EPlayerFlags Value) const {
+	bool HasFlag(EEntityFlags Value) const {
 		return PlayerFlag->_HasFlag(static_cast<int32>(Value));
 	};
 

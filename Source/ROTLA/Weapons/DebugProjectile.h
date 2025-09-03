@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "DamageInterface.h"
+#include "ROTLA/Utility/Interfaces/DamageInterface/DamageInterface.h"
 #include "DebugProjectile.generated.h"
 
 USTRUCT()

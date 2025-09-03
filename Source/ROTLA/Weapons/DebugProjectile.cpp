@@ -7,7 +7,7 @@ ADebugProjectile::ADebugProjectile() {
 }
 
 void ADebugProjectile::BeginPlay() {
-
+	Super::BeginPlay();
 }
 
 void ADebugProjectile::Initilize(FProjectileData Data) {
@@ -28,6 +28,11 @@ void ADebugProjectile::Fire() {
 	FHitResult Hit;
 	DrawDebugLine(GetWorld(), GetActorLocation(), EndingLocation, FColor::Red, true);
 	GetWorld()->LineTraceSingleByChannel(Hit, GetActorLocation(), EndingLocation, ECollisionChannel::ECC_Camera, ColParams);
-	Cast<IDamageInterface>(Hit.GetActor())->DealDamage(SpawningWeapon.Damage);
-	Destroy();
+	if (Hit.bBlockingHit && Hit.GetActor()) {
+		auto* Killable = Cast<IDamageInterface>(Hit.GetActor());
+		if(Killable)
+			Killable->DealDamage(SpawningWeapon.Damage);
+	}
+	
+	this->Destroy();
 }

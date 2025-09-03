@@ -36,6 +36,9 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	class UWeaponRegistry* Weapons;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	class UEnemyRegistry* Enemies;
+
 protected:
 	void Shutdown() override;
 	void CloseDebugWindow();

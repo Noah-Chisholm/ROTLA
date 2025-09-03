@@ -39,5 +39,5 @@ class IDamageInterface
 	GENERATED_BODY()
 
 public:
-	bool DealDamage(FDamage DamageToDeal);
+	virtual bool DealDamage(FDamage DamageToDeal);
 };

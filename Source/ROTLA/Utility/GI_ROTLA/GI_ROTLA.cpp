@@ -5,6 +5,8 @@
 #include "Framework/Application/SlateApplication.h"
 #include "ROTLA/Utility/DebugCommandHandler/DebugCommandHandler.h"
 #include "ROTLA/Weapons/WeaponRegistry.h"
+#include "ROTLA/Enemies/EnemyRegistry.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "Blueprint/UserWidget.h"
 #include "Widgets/SWeakWidget.h"
 
@@ -51,4 +53,18 @@ void UGI_ROTLA::CloseDebugWindow()
 void UGI_ROTLA::Init() {
 	IsEditor = GIsEditor && !IsRunningCommandlet();
 	Super::Init();
+
+	FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	IAssetRegistry& AR = ARM.Get();
+	Enemies = NewObject<UEnemyRegistry>(this, UEnemyRegistry::StaticClass());
+
+	if (AR.IsLoadingAssets())
+	{
+		// Defer until the cooked registry is available
+		AR.OnFilesLoaded().AddUObject(Enemies, &UEnemyRegistry::CreateRegistry);
+	}
+	else
+	{
+		Enemies->CreateRegistry();
+	}
 }
